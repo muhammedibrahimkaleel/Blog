@@ -1,7 +1,8 @@
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from .models import Post
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.models import User
 # from django.http import HttpResponse
 
 # Create your views here.
@@ -19,6 +20,18 @@ class PostListView(ListView):
     template_name = 'blog/home.html' # <app>/<model>_<viewtype>.html
     context_object_name = 'posts'
     ordering = ['-date']
+    paginate_by = 5
+
+
+class UserPostListView(ListView):
+    model = Post
+    template_name = 'blog/user_posts.html'  # <app>/<model>_<viewtype>.html
+    context_object_name = 'posts'
+    paginate_by = 5
+
+    def get_queryset(self):
+        user = get_object_or_404(User,username=self.kwargs.get('username'))
+        return Post.objects.filter(author=user).order_by('-date')
 
 
 class PostDetailView(DetailView):
@@ -29,7 +42,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     model = Post
     fields = ['title', 'content']
 
-    def form_valid(self, form):
+    def form_valid(self, form):           # check if the user is the author of the post and allows him to create a post
         form.instance.author = self.request.user
         return super().form_valid(form)
 
